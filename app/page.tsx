@@ -10,6 +10,7 @@ type ScriptLine = {
 
 type TimelineEntry = {
   speaker: string;
+  line: string;
   audio: string;
   start: number;
   duration: number;
@@ -24,6 +25,8 @@ export default function Home() {
   const [script, setScript] = useState<ScriptLine[]>([]);
   const [timeline, setTimeline] = useState<TimelineEntry[] | null>(null);
   const [generatingAudio, setGeneratingAudio] = useState(false);
+  const [generatingVideo, setGeneratingVideo] = useState(false);
+  const [videoUrl, setVideoUrl] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   async function handleUpload(e: React.ChangeEvent<HTMLInputElement>) {
@@ -99,11 +102,32 @@ export default function Home() {
     setGeneratingAudio(false);
   }
 
+  async function handleGenerateVideo() {
+    if (!timeline) return;
+    setError(null);
+    setGeneratingVideo(true);
+    try {
+      const res = await fetch("/api/render", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ timeline }),
+      });
+      const json = await res.json();
+      if (!res.ok) throw new Error(json.error ?? "Failed to render video");
+      setVideoUrl(json.videoUrl);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Something went wrong");
+    }
+    setGeneratingVideo(false);
+  }
+
   function reset() {
     setStep("idle");
     setParsedText("");
     setTopics([]);
     setScript([]);
+    setTimeline(null);
+    setVideoUrl(null);
     setError(null);
   }
 
@@ -171,27 +195,60 @@ export default function Home() {
             ))}
           </div>
 
-          <div className="flex gap-3">
+          <div className="flex gap-3 flex-wrap">
             <button
               onClick={handleGenerateAudio}
-              disabled={generatingAudio}
+              disabled={generatingAudio || generatingVideo}
               className="px-4 py-2 rounded bg-black text-white hover:bg-gray-800 transition-colors text-sm disabled:opacity-50"
             >
               {generatingAudio ? "Generating audio..." : timeline ? "Regenerate audio" : "Generate audio"}
             </button>
+            {timeline && (
+              <button
+                onClick={handleGenerateVideo}
+                disabled={generatingVideo || generatingAudio}
+                className="px-4 py-2 rounded bg-indigo-600 text-white hover:bg-indigo-700 transition-colors text-sm disabled:opacity-50"
+              >
+                {generatingVideo ? "Rendering video..." : "Generate video"}
+              </button>
+            )}
             <button
               onClick={() => setStep("topics")}
-              className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition-colors text-sm"
+              disabled={generatingVideo}
+              className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition-colors text-sm disabled:opacity-50"
             >
               Pick a different topic
             </button>
             <button
               onClick={reset}
-              className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition-colors text-sm"
+              disabled={generatingVideo}
+              className="px-4 py-2 rounded border border-gray-300 hover:bg-gray-100 transition-colors text-sm disabled:opacity-50"
             >
               Upload a new PDF
             </button>
           </div>
+
+          {generatingVideo && (
+            <p className="mt-4 text-sm text-gray-500">Rendering video — this may take a few minutes...</p>
+          )}
+
+          {videoUrl && !generatingVideo && (
+            <div className="mt-6 flex flex-col items-center gap-2">
+              <video
+                src={videoUrl}
+                controls
+                className="rounded-lg border border-gray-200"
+                style={{ width: "320px", aspectRatio: "9/16" }}
+              />
+              <a
+                href={videoUrl}
+                download="podcast.mp4"
+                className="text-sm text-indigo-600 hover:underline"
+              >
+                Download video
+              </a>
+            </div>
+          )}
         </div>
       )}
     </main>

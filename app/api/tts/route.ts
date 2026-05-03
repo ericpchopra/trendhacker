@@ -57,6 +57,7 @@ export async function POST(req: NextRequest) {
 
       timeline.push({
         speaker,
+        line: script[i].line,
         audio: `/audio/${filename}`,
         start: Math.round(currentStart * 1000) / 1000,
         duration: Math.round(duration * 1000) / 1000,
