@@ -26,17 +26,26 @@ Rules:
 - PETER does all the educating — every real fact or explanation comes from him. Do not shorten Peter's lines.
 - The dialogue must actually teach the listener something real and accurate about the topic
 - Keep it funny and entertaining — this is brainrot-style content for TikTok/Instagram
-- Format each line as: STEWIE: [line] or PETER: [line]
-- No stage directions, no scene descriptions, just dialogue`,
+
+Output a JSON object with a single key "script" whose value is an array of dialogue lines. Each item must have:
+- "speaker": either "Peter" or "Stewie"
+- "line": the spoken text only, no stage directions or parentheticals
+- "emotion": a single lowercase word describing the speaker's tone for this line (e.g. "curious", "sarcastic", "enthusiastic", "confused", "smug", "excited", "deadpan"), or null if neutral
+
+Return only valid JSON. No markdown, no extra text.`,
         },
         {
           role: "user",
           content: `Write the Stewie & Peter podcast script about: "${topic}"\n\nUse this source material as your knowledge base:\n\n${text}`,
         },
       ],
+      response_format: { type: "json_object" },
     });
 
-    const script = completion.choices[0].message.content ?? "";
+    const raw = completion.choices[0].message.content ?? "{}";
+    const parsed = JSON.parse(raw);
+    const script = parsed.script ?? [];
+
     return NextResponse.json({ script });
   } catch (err) {
     const message = err instanceof Error ? err.message : "Failed to generate script";
