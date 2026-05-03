@@ -33,6 +33,12 @@ yarn-error.log*
 # env files (can opt-in for committing if needed)
 .env*
 
+# generated files
+public/output.mp4
+public/audio/*
+!public/audio/.gitkeep
+public/minecraft/*.mp4
+
 # vercel
 .vercel
 
