@@ -31,6 +31,7 @@ export async function POST(req: NextRequest) {
     }
 
     const audioDir = path.join(process.cwd(), "public", "audio");
+    await fs.rm(audioDir, { recursive: true, force: true });
     await fs.mkdir(audioDir, { recursive: true });
 
     const timeline = [];
